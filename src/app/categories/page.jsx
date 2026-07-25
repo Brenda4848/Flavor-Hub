@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useState } from "react"
 import categories from "@/data/categories"
 import Navbar from "@/components/Navbar"
+import Footer from "@/components/Footer"
 
 export default function AllCategoriesPage() {
   const [search, setSearch] = useState("")
@@ -70,6 +71,7 @@ export default function AllCategoriesPage() {
           </div>
         )}
       </div>
+      <Footer/>
     </div>
   )
 }

@@ -1,21 +1,21 @@
 // src/lib/mongodb.js
-import mongoose from "mongoose";
+import mongoose from "mongoose"
+
+let isConnected = false
 
 export default async function connectToDb() {
-    // logic to connect to the database
+  if (isConnected) {
+    console.log("Already connected to DB")
+    return
+  }
 
-    try {
-        const db = await mongoose.connect(process.env.MONGO_URL)
-        if (db) {
-            console.log('Connected to the database successfully');
-            return db;
-        } else {
-            console.log('Failed to connect to the database');
-        }
-    }
-
-    catch (error) {
-        console.error('Error connecting to the database:', error);
-    }
-
+  try {
+    const db = await mongoose.connect(process.env.MONGODB_URL)
+    isConnected = true
+    console.log("Connected to database successfully")
+    return db
+  } catch (error) {
+    console.error("Database connection error:", error)
+    throw error
+  }
 }

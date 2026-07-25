@@ -1,80 +1,72 @@
 // src/context/AuthContext.jsx
-
 "use client"
-import { useRouter } from "next/navigation"; // Note: Use next/navigation for App Router
-import { createContext, useContext, useEffect, useState } from "react";
 
-const AuthContext = createContext(null);
+import { createContext, useContext, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+
+const AuthContext = createContext(null)
 
 export const AuthProvider = ({ children }) => {
-    const router = useRouter();
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const router = useRouter()
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-            setLoading(false);
-            return;
-        }
+  useEffect(() => {
+    const token = localStorage.getItem("token")
 
-        try {
-            // Decode jwt token payload safely
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const currentTime = Date.now() / 1000;
+    if (!token) {
+      setLoading(false)
+      return
+    }
 
-            if (payload.exp < currentTime) {
-                localStorage.removeItem('token');
-                setUser(null);
-                toast.error("Login");
-                router.push('/sign-in');
-            } else {
-                setUser(payload);
-            }
-        } catch (error) {
-            console.error("Error parsing user from localStorage:", error);
-            localStorage.removeItem('token');
-            setUser(null);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]))
+      const isExpired = payload.exp < Date.now() / 1000
 
-    const signIn = (token) => {
-        localStorage.setItem('token', token); // Usually store raw token string, not JSON.stringify(token)
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        setUser(payload);
-    };
+      if (isExpired) {
+        localStorage.removeItem("token")
+        setUser(null)
+      } else {
+        setUser(payload)
+      }
+    } catch {
+      localStorage.removeItem("token")
+      setUser(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-        router.push('/sign-in');
-    };
+  const signIn = (token) => {
+    localStorage.setItem("token", token)
+    const payload = JSON.parse(atob(token.split(".")[1]))
+    setUser(payload)
+  }
 
-    return (
-        <AuthContext.Provider value={{
-            user,
-            loading,
-            signIn,
-            logout,
-            isAuthenticated: !!user
-        }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  const logout = () => {
+    localStorage.removeItem("token")
+    setUser(null)
+    router.push("/signin") // ✅ fixed — was /sign-in
+  }
+
+  return (
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      signIn,
+      logout,
+      isAuthenticated: !!user,
+    }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
-// Fixed hook return
 export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-};
-
+  const context = useContext(AuthContext)
+  if (!context) throw new Error("useAuth must be used within AuthProvider")
+  return context
+}
 // "use client"
 // import { createContext, useContext, useState, useEffect } from "react"
 // import { useRouter } from "next/navigation"

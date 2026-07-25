@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import Image from "next/image"
 import Navbar from "@/components/Navbar"
+import Footer from "@/components/Footer"
 import categories from "@/data/categories"
 import { useCart } from "@/context/CartContext"
 import CartSidebar from "@/components/CartSidebar"
@@ -247,6 +248,7 @@ export default function MenuPage() {
       </div>
 
       <CartSidebar />
+      <Footer/>
     </div>
   )
 }

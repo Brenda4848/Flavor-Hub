@@ -1,99 +1,90 @@
 // src/components/Navbar.jsx
 "use client"
+
 import Link from "next/link"
- import CartSidebar from "./CartSidebar";
+import Image from "next/image"
+import CartSidebar from "./CartSidebar"
 import { useCart } from "@/context/CartContext"
-import { useState } from "react";
+import { useAuth } from "@/context/AuthContext"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+
 
 export default function Navbar() {
   const { itemCount, setIsOpen } = useCart()
+  const { user, logout, isAuthenticated } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const router = useRouter()
+
+const navLinks = [
+    { label: "Menu", href: "/menu" },
+    { label: "Categories", href: "/categories" },
+    { label: "Chefs", href: "/chefs" },
+    { label: "Book a Chef", href: "/book-a-chef" },
+  ]
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
 
         {/* Logo */}
-        <Link href="/" className="text-2xl font-extrabold">
-          <span className="text-orange-500">Flavor</span>
-          <span className="text-gray-900 dark:text-white">Hub</span>
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <Image
+            src="/flavhub.png"
+            alt="FlavorHub Logo"
+            width={40}
+            height={40}
+            className="object-contain"
+          />
+          <span className="text-2xl font-extrabold">
+            <span className="text-orange-500">Flavor</span>
+            <span className="text-gray-900 dark:text-white">Hub</span>
+          </span>
         </Link>
-
-        {/* Nav links */}
-        <div className="hidden md:flex items-center gap-8">
-           <Link
-            href="/menu"
-            className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-orange-500 transition-colors"
-          >
-            Menu
-          </Link>
-
-          {[ "Categories", "Chefs"].map(link => (
+        {/* Desktop Nav Links */}
+        <div className="hidden md:flex items-center gap-6 lg:gap-8">
+          {navLinks.map(link => (
             <Link
-              key={link}
-              href={`/${link.toLowerCase()}`}
-              className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+              key={link.href}
+              href={link.href}
+              className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-orange-500 transition-colors"
             >
-              {link}
+              {link.label}
             </Link>
           ))}
-          <Link
-            href="/book-a-chef"
-            className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-orange-500 transition-colors"
-          >
-            Book a Chef
-          </Link>
         </div>
-
         {/* Right side */}
         <div className="flex items-center gap-3">
 
-          {/* Dark m`ode toggle */}
-          {/* <button
-            onClick={toggleTheme}
-            className="relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none border border-gray-200 dark:border-gray-700"
-            style={{ background: isDark ? "#f97316" : "#e5e7eb" }}
-            aria-label="Toggle dark mode"
-          >
-            <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full flex items-center justify-center text-sm transition-transform duration-300 shadow-sm ${isDark ? "translate-x-7 bg-gray-900" : "translate-x-0 bg-white"}`}>
-              {isDark ? "🌙" : "☀️"}
-            </span>
-          </button> */}
-
-          <div className="flex items-center gap-3">
-
-            
-            <Link href="/signin">
-            <button className="hidden md:block text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
-            Sign in
-          </button>
+          {/* ✅ Dashboard button — ONLY shows when user is signed in as admin */}
+          {isAuthenticated && user?.role === "admin" && (
+            <Link
+              href="/adashboard"
+              className="hidden md:flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-4 py-2 rounded-full transition-all duration-200"
+            >
+              🛠 Dashboard
             </Link>
-          
-           <button
-            className="md:hidden text-gray-700"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            {menuOpen ? "✕" : "☰"}
-          </button>
-
-           <CartSidebar/>
-         </div>
-
-         {menuOpen && (
-         <div className="md:hidden bg-white border-t border-orange-100 px-6 py-4 flex flex-col gap-4">
-           {navLinks.map((link) => (
-             <Link
-               key={link.href}
-               href={link.href}
-               onClick={() => setMenuOpen(false)}
-               className="text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors"
-             >
-               {link.label}
-             </Link>
-           ))}
-        </div>
-       )}
-
+          )}
+          {/* ✅ Show user name + logout when signed in, show Sign in when not */}
+          {isAuthenticated ? (
+            <div className="hidden md:flex items-center gap-3">
+              <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                👋 {user?.email?.split("@")[0]}
+              </span>
+              <button
+                onClick={logout}
+                className="text-sm font-medium text-gray-500 hover:text-red-500 transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <Link href="/signin">
+              <button className="hidden md:block text-sm font-medium text-gray-600 hover:text-orange-500 transition-colors">
+                Sign in
+              </button>
+            </Link>
+          )}
           {/* Cart */}
           <button
             onClick={() => setIsOpen(true)}
@@ -106,8 +97,68 @@ export default function Navbar() {
               </span>
             )}
           </button>
+
+          {/* Hamburger — mobile only */}
+          <button
+            className="md:hidden text-gray-700 dark:text-gray-300 p-1"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
+
         </div>
       </div>
+
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <div className="md:hidden bg-white dark:bg-gray-900 border-t border-orange-100 dark:border-gray-800 px-6 py-4 flex flex-col gap-3">
+
+          {navLinks.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMenuOpen(false)}
+              className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-orange-500 py-2 transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+
+          <div className="border-t border-gray-100 dark:border-gray-800 pt-3 flex flex-col gap-3">
+
+            {/* ✅ Mobile Dashboard button — admin only */}
+            {isAuthenticated && user?.role === "admin" && (
+              <Link
+                href="/adashboard"
+                onClick={() => setMenuOpen(false)}
+                className="bg-orange-500 text-white text-sm font-bold px-4 py-2.5 rounded-full text-center"
+              >
+                🛠 Dashboard
+              </Link>
+            )}
+
+            {/* ✅ Mobile sign in / sign out */}
+            {isAuthenticated ? (
+              <button
+                onClick={() => { logout(); setMenuOpen(false) }}
+                className="text-sm font-medium text-red-500 py-2 text-left"
+              >
+                Sign out
+              </button>
+            ) : (
+              <Link
+                href="/signin"
+                onClick={() => setMenuOpen(false)}
+                className="text-sm font-medium text-gray-700 hover:text-orange-500 py-2"
+              >
+                Sign in
+              </Link>
+            )}
+
+          </div>
+        </div>
+      )}
+
       <CartSidebar />
     </nav>
   )

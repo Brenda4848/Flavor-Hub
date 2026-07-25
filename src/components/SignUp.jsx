@@ -1,205 +1,195 @@
 "use client"
-import React, { useState } from 'react'
-import { CiUser } from "react-icons/ci"
-import { MdOutlineWarehouse } from "react-icons/md";
-import { HiOutlineInboxStack } from "react-icons/hi2";
-import Link from 'next/link';
-import Image from 'next/image';
-import BuyerSignup from './BuyerSignup';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
+import { useState } from "react"
+import Link from "next/link"
+import axios from "axios"
+import { useRouter } from "next/navigation"
+import { toast } from "react-toastify"
+
 export default function SignUp() {
-
-  const router=useRouter()
-
-  // inialization of use state
-  const [errors, setErrors] = useState({})
-  const [selectedRole, setSelectedRole] = useState('')
+  const router = useRouter()
   const [inputData, setInputData] = useState({
-
     fullname: "",
     email: "",
     password: "",
-
+    confirmPassword: "",
   })
-
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [errors, setErrors] = useState({})
 
-  const handleselectedRole = (role) => {
-    setSelectedRole(role)
-  }
-  // function for handleOnChange
   const handleOnChange = (e) => {
     const { name, value } = e.target
-    setInputData({ ...inputData, [name]: value })
+    setInputData((prev) => ({ ...prev, [name]: value }))
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }))
   }
-
-  // validate by Checking if the input is empty
 
   const validate = () => {
-    let newErrors = {}
-
-    
-
-    if (!inputData.fullname) {
-      newErrors.fullname = "please fill in Full name"
-    }
-
-    if (!inputData.email) {
-      newErrors.email = "please fill  in your email"
-    }
-
-    if (!inputData.password) {
-      newErrors.password = "please fill in your password"
-    }
+    const newErrors = {}
+    if (!inputData.fullname) newErrors.fullname = "Full name is required"
+    if (!inputData.email) newErrors.email = "Email is required"
+    if (!inputData.password) newErrors.password = "Password is required"
+    if (inputData.password && inputData.password.length < 6)
+      newErrors.password = "Password must be at least 6 characters"
+    if (inputData.password !== inputData.confirmPassword)
+      newErrors.confirmPassword = "Passwords do not match"
     return newErrors
   }
-  // function for formHandling
+
   const handleSubmit = async (e) => {
-    // prevent form default submission
     e.preventDefault()
-
     const validationErrors = validate()
-    if (Object.keys(validationErrors).length == 0) {
-      console.log("api sent")
-      // send api request to the backend
-      try {
-        setLoading(true)
-
-        const res = await axios.post("/api/sign-up", inputData)
-        console.log(res)
-        if (res.status==201) {
-
-          // /store user email in the local storage
-          // LocalStorage.setItem("email", email);
-
-          setLoading(false)
-          router.push('/verify-otp')
-        }
-      }
-      
-      catch (error) {
-    setLoading(false);
-    
-    // Safely pull the server message if it exists, otherwise fall back to the raw axios error message
-    const backendMessage = error.response?.data?.message || error.message || "Something went wrong";
-    
-    // Set errors as an object matching your state expectations, or pass a simple string
-    setErrors({ general: backendMessage });
-    
-    console.error("Error signing up:", error);
-  }
-      // catch (error) {
-      //   setLoading(false)
-      //   setErr
-      //   setErrors(error.response.message)
-      //   console.error("Error signing up:", error)
-      // }
-    }
-    else {
+    if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
-      console.log(errors)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { confirmPassword, ...dataToSend } = inputData
+      const res = await axios.post("/api/sign-up", dataToSend)
+
+      if (res.status === 201) {
+        toast.success("Account created! Check your email for the OTP.")
+        localStorage.setItem("pendingEmail", inputData.email)
+        router.push("/verify-otp")
+      }
+    } catch (error) {
+      const message =
+        error.response?.data?.message || "Something went wrong. Try again."
+      toast.error(message)
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <>
-      <div className='w-full h-full bg-orange-50 flex justify-center items-center gap-2 py-10'>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
 
-        <div className='border bg-white border-black/35 w-100 h-auto rounded-2xl px-3 shadow-xl '>
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            <span className="text-orange-500">Flavor</span>
+            <span className="text-gray-900">Hub</span>
+          </h1>
+          <p className="text-gray-500 mt-2 text-sm">Create your free account today</p>
+        </div>
 
-          <div className=' w-50 py-10 px-2'>
-            <h1 className='text-2xl font-bold text-orange-600'>Join Nestly</h1>
-            <p className='text-sm font-light'>Pick how you'll use Nestly</p>
-          </div>
+        {/* Card */}
+        <div className="bg-white rounded-3xl shadow-xl border border-orange-100 px-8 py-10">
 
-          <div className='w-full px-2 flex justify-between items-center gap-2 py-3'>
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Create account</h2>
+          <p className="text-gray-400 text-sm mb-8">Fill in your details to get started</p>
 
-            <div onClick={() => handleselectedRole('buyer')} className='w-25 border border-black/25 pb-2 cursor-pointer rounded-2xl hover:bg-orange-100 hover:text-orange-600'>
-              <span className='text-2xl  flex justify-center items-center pt-2 pb-2 text-orange-600 font-bold'><CiUser /></span>
-              <p className='text-center text-xs'>Buyer</p>
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Full Name */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="fullname"
+                value={inputData.fullname}
+                onChange={handleOnChange}
+                placeholder="John Doe"
+                className={`w-full border ${errors.fullname ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all`}
+              />
+              {errors.fullname && (
+                <p className="text-red-500 text-xs mt-1">{errors.fullname}</p>
+              )}
             </div>
 
-            <div onClick={() => handleselectedRole('seller')} className='w-25 border border-black/25 pb-2 cursor-pointer rounded-2xl hover:bg-orange-100 hover:text-orange-600'>
-              <span className='text-2xl  flex justify-center items-center pt-2 pb-2 text-orange-600 font-bold' ><MdOutlineWarehouse /></span>
-              <p className='text-center text-xs'>Seller</p>
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Email Address
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={inputData.email}
+                onChange={handleOnChange}
+                placeholder="you@example.com"
+                className={`w-full border ${errors.email ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all`}
+              />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
             </div>
 
-            <div className='w-25 border border-black/25 pb-2 cursor-pointer rounded-2xl  hover:bg-orange-100 hover:text-orange-600'>
-              <span className='text-2xl  flex justify-center items-center pt-2 pb-2  text-orange-600 font-bold'><HiOutlineInboxStack /></span>
-              <p className='text-center text-xs'>Agent</p>
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Password
+              </label>
+              <div className={`flex items-center border ${errors.password ? "border-red-400" : "border-gray-200"} rounded-xl px-4 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100 transition-all`}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={inputData.password}
+                  onChange={handleOnChange}
+                  placeholder="Min. 6 characters"
+                  className="flex-1 py-3 text-sm outline-none bg-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="text-gray-400 hover:text-gray-600 text-xs font-medium ml-2 shrink-0"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+              )}
             </div>
-          </div>
 
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Confirm Password
+              </label>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={inputData.confirmPassword}
+                onChange={handleOnChange}
+                placeholder="Repeat your password"
+                className={`w-full border ${errors.confirmPassword ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all`}
+              />
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+              )}
+            </div>
 
-          <div className='w-full py-8'>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-200 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-orange-100 mt-2"
+            >
+              {loading ? "Creating account..." : "Create Account →"}
+            </button>
 
-            {selectedRole == 'seller' && (
-              <form action="" onSubmit={handleSubmit}>
-                <div className='w-30 h-40 m-auto'>
-                  <div className='w-30 h-30 rounded-full' >
-                    <Image src='/mrniceguy.png' width={300} height={300} alt='profile' className='w-full h-full rounded-full' />
-                  </div>
+          </form>
 
-
-                  <div className='py-4'>
-                    <label>
-                      <input type="file" name='picture' onChange={handleOnChange} />
-                      <button className='bg-orange-600  cursor-pointer text-wcdcdchite text-sm px-2 py-3 w-30 rounded-full'>Upload</button>
-                    </label>
-                  </div>
-                </div>
-
-                <div className='py-4'>
-                  <label className='block px-3 py-2 text-sm'>Full name</label>
-                  <input type="text" name='fullname' placeholder='Ngalaka Gift' onChange={handleOnChange} className='w-full border border-black/25 py-2 px-4 outline-none hover:outline-1 rounded-full  text-sm' />
-                </div>
-
-                {errors.fullname && (<p className='text-red-500 font-mono font-semibold text-xs italic'>{errors.fullname}</p>)}
-
-                <div className='py-4'>
-                  <label className='block px-2 py-2 text-sm'>Email</label>
-                  <input type="email" name='email' placeholder='ngalakagift@gmail.com' onChange={handleOnChange} className='w-full border border-black/25 py-2 px-4 outline-none hover:outline-1 rounded-full  text-sm' />
-                </div>
-
-                {errors.email && (<p className='text-red-500 font-mono font-semibold text-xs italic'>{errors.email}</p>)}
-
-                <div className='py-4'>
-                  <label className='block px-2 py-2 text-sm'>Password</label>
-                  <input type="password" name='password' placeholder='............' onChange={handleOnChange} className='w-full border border-black/25 py-2 px-4 outline-none hover:outline-1 rounded-full  text-sm' />
-                </div>
-
-                {errors.password && (<p className='text-red-500 font-mono font-semibold text-xs italic'>{errors.password}</p>)}
-
-          
-
-                {errors.confirmpass && (<p className='text-red-500 font-mono font-semibold text-xs italic'>{errors.confirmpass}</p>)}
-                <div className='w-full flex justify-self-start items-center gap-2 py-4 px-3'>
-                  <Link href="/sign-in" className='italic text-sm'>Already have an account</Link>
-                </div>
-
-                <div className='w-full py-4 px-4'>
-                  <button disabled={loading} type='submit' className={`w-80 ${loading ? 'bg-orange-500 text-black' : 'bg-orange-600'} py-3 text-white cursor-pointer rounded-full`}> {loading ? "loading..." : "create account"} </button>
-                </div>
-
-                <div className='w-70 m-auto'>
-                  <p className='text-sm italic  '>By continuing you agree to our <Link href="/terms" className='text-sm underline'>Terms</Link></p>
-                </div>
-              </form>
-            )
-            }
-
-            {
-              selectedRole == 'buyer' && (
-                <BuyerSignup />
-              )
-            }
-          </div>
+          <p className="text-center text-sm text-gray-500 mt-6">
+            Already have an account?{" "}
+            <Link href="/signin" className="text-orange-500 font-semibold hover:underline">
+              Sign in
+            </Link>
+          </p>
 
         </div>
 
+        <p className="text-center text-xs text-gray-400 mt-6">
+          By signing up you agree to our{" "}
+          <Link href="/terms" className="underline hover:text-orange-500">Terms of Service</Link>
+        </p>
 
       </div>
-    </>
+    </div>
   )
 }
