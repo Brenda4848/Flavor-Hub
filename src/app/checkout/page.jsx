@@ -6,27 +6,52 @@ import { useAuth } from "@/context/AuthContext"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
-import { usePaystackPayment } from "react-paystack"
+
 
 // ── Paystack button ────────────────────────────────────────────────────────
-function PayButton({ amount, email, name, onSuccess, onClose, disabled }) {
-  const config = {
-    reference: `FH_${Date.now()}`,
-    email: email || "customer@flavorhub.com",
+function PayButton({
+  amount,
+  email,
+  name,
+  onSuccess,
+  onClose,
+  disabled,
+}) {
+  const handlePayment = async () => {
+  const PaystackPop = (await import("@paystack/inline-js")).default;
+
+  const popup = new PaystackPop();
+
+  popup.newTransaction({
+    key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+
+    email,
+
     amount: Math.round(amount * 100),
-    publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+
+    currency: "NGN",
+
+    reference: `FH_CHEF_${Date.now()}`,
+
     metadata: {
       custom_fields: [
         {
           display_name: "Customer Name",
           variable_name: "customer_name",
-          value: name || "Customer",
+          value: name,
         },
       ],
     },
-  }
 
-  const initializePayment = usePaystackPayment(config)
+    onSuccess: (transaction) => {
+      onSuccess(transaction);
+    },
+
+    onCancel: () => {
+      onClose();
+    },
+  });
+};
 
   if (disabled) {
     return (
@@ -38,13 +63,18 @@ function PayButton({ amount, email, name, onSuccess, onClose, disabled }) {
 
   return (
     <button
-      onClick={() => initializePayment(onSuccess, onClose)}
+      onClick={handlePayment}
       className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-sm text-base"
     >
-      🔒 Pay ${amount.toFixed(2)} with Paystack
+      🔒 Pay ₦{amount.toFixed(2)} with Paystack
     </button>
   )
 }
+
+ 
+
+ 
+
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function CheckoutPage() {

@@ -2,7 +2,6 @@
 import { useState } from "react"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
-import { usePaystackPayment } from "react-paystack"  // ← changed import
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"        // ← add this
 import { FaRegClock } from "react-icons/fa";
@@ -62,20 +61,49 @@ const CHEFS = [
 ]
 
 // ── Paystack button as its own inner component ──────────────────────────────
-function PayButton({ amount, email, name, onSuccess, onClose, disabled }) {
-  const config = {
+function PayButton({
+  amount,
+  email,
+  name,
+  onSuccess,
+  onClose,
+  disabled,
+}) {
+  const handlePayment = async () => {
+  const PaystackPop = (await import("@paystack/inline-js")).default;
+
+  const popup = new PaystackPop();
+
+  popup.newTransaction({
+    key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+
+    email,
+
+    amount: Math.round(amount * 100),
+
+    currency: "NGN",
+
     reference: `FH_CHEF_${Date.now()}`,
-    email: email || "customer@flavorhub.com",
-    amount: Math.round(amount * 100), // kobo
-    publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+
     metadata: {
       custom_fields: [
-        { display_name: "Customer Name", variable_name: "customer_name", value: name || "Customer" },
+        {
+          display_name: "Customer Name",
+          variable_name: "customer_name",
+          value: name,
+        },
       ],
     },
-  }
 
-  const initializePayment = usePaystackPayment(config)
+    onSuccess: (transaction) => {
+      onSuccess(transaction);
+    },
+
+    onCancel: () => {
+      onClose();
+    },
+  });
+};
 
   if (disabled) {
     return (
@@ -87,13 +115,14 @@ function PayButton({ amount, email, name, onSuccess, onClose, disabled }) {
 
   return (
     <button
-      onClick={() => initializePayment(onSuccess, onClose)}
+      onClick={handlePayment}
       className="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
     >
-      🔒 Pay ${amount.toLocaleString()} with Paystack
+      🔒 Pay ₦{amount.toLocaleString()} with Paystack
     </button>
   )
 }
+
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function BookAChefPage() {
