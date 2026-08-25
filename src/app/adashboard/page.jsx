@@ -1,5 +1,6 @@
 // src/app/dashboard/page.jsx
 "use client"
+import StaffManagement from "@/components/StaffManagement";
 import Link from "next/link"
 import { CiLogout } from "react-icons/ci";
 import {
@@ -212,6 +213,8 @@ export default function DashboardPage() {
           </button>
         </div>
 
+       
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -252,6 +255,7 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
+        <StaffManagement />
       </div>
 
     </div>
